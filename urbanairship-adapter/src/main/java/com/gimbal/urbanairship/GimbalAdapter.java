@@ -17,6 +17,7 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresPermission;
+import androidx.annotation.RestrictTo;
 import androidx.core.content.ContextCompat;
 
 import com.gimbal.android.Attributes;
@@ -46,7 +47,7 @@ public class GimbalAdapter {
     private static final String TRACK_CUSTOM_ENTRY_PREFERENCE_KEY = "com.urbanairship.gimbal.track_custom_entry";
     private static final String TRACK_CUSTOM_EXIT_PREFERENCE_KEY = "com.urbanairship.gimbal.track_custom_exit";
     private static final String TRACK_REGION_EVENT_PREFERENCE_KEY = "com.urbanairship.gimbal.track_custom_exit";
-    private static final String STARTED_REFERENCE = "com.urbanairship.gimbal.is_started";
+    private static final String STARTED_PREFERENCE = "com.urbanairship.gimbal.is_started";
 
     private static final String TAG = "GimbalAdapter";
     private static final String SOURCE = "Gimbal";
@@ -289,10 +290,15 @@ public class GimbalAdapter {
     @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
     public void restore() {
         String gimbalApiKey = preferences.getString(API_KEY_PREFERENCE, null);
-        boolean previouslyStarted = preferences.getBoolean(STARTED_REFERENCE, false);
+        boolean previouslyStarted = preferences.getBoolean(STARTED_PREFERENCE, false);
         if (gimbalApiKey != null && previouslyStarted) {
             Log.i(TAG, "Restoring Gimbal Adapter");
             startAdapter(gimbalApiKey);
+            if (isStarted()) {
+                Log.i(TAG, "Gimbal adapter restored");
+            } else {
+                Log.e(TAG, "Failed to restore Gimbal adapter. Make sure the API key is being set Application#onCreate");
+            }
         }
     }
 
@@ -359,7 +365,7 @@ public class GimbalAdapter {
 
         preferences.edit()
                 .putString(API_KEY_PREFERENCE, gimbalApiKey)
-                .putBoolean(STARTED_REFERENCE, true)
+                .putBoolean(STARTED_PREFERENCE, true)
                 .apply();
 
         try {
@@ -388,7 +394,7 @@ public class GimbalAdapter {
         }
 
         preferences.edit()
-                .putBoolean(STARTED_REFERENCE, false)
+                .putBoolean(STARTED_PREFERENCE, false)
                 .apply();
 
         try {
