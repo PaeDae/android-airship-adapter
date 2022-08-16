@@ -1,1 +1,1 @@
-include ':urbanairship-adapter'
+include ':airship-adapter'

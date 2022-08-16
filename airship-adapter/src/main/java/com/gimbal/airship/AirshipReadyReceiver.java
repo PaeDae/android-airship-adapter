@@ -2,7 +2,7 @@
  * Copyright 2018 Urban Airship and Contributors
  */
 
-package com.gimbal.urbanairship;
+package com.gimbal.airship;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -19,12 +19,12 @@ public class AirshipReadyReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(final Context context, Intent intent) {
-        GimbalAdapter.shared(context).restore();
+        AirshipAdapter.shared(context).restore();
 
         UAirship.shared().getChannel().addChannelListener(new AirshipChannelListener() {
             @Override
             public void onChannelCreated(@NonNull String channelId) {
-                GimbalAdapter.shared(context).onAirshipChannelCreated();
+                AirshipAdapter.shared(context).onAirshipChannelCreated();
             }
 
             @Override

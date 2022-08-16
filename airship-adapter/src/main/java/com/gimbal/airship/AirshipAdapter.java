@@ -2,7 +2,7 @@
  * Copyright 2018 Urban Airship and Contributors
  */
 
-package com.gimbal.urbanairship;
+package com.gimbal.airship;
 
 import static android.Manifest.permission.ACCESS_FINE_LOCATION;
 
@@ -41,7 +41,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 /**
  * GimbalAdapter interfaces Gimbal SDK functionality with Urban Airship services.
  */
-public class GimbalAdapter {
+public class AirshipAdapter {
     private static final String PREFERENCE_NAME = "com.urbanairship.gimbal.preferences";
     private static final String API_KEY_PREFERENCE = "com.urbanairship.gimbal.api_key";
     private static final String TRACK_CUSTOM_ENTRY_PREFERENCE_KEY = "com.urbanairship.gimbal.track_custom_entry";
@@ -64,7 +64,7 @@ public class GimbalAdapter {
     private static final String CUSTOM_EXIT_EVENT_NAME = "gimbal_custom_exit_event";
 
     private final SharedPreferences preferences;
-    private static GimbalAdapter instance;
+    private static AirshipAdapter instance;
     private final Context context;
     private final List<Listener> listeners = new CopyOnWriteArrayList<>();
     private boolean isAdapterStarted = false;
@@ -204,7 +204,7 @@ public class GimbalAdapter {
                 return createCustomEventBuilder(eventName, visit, boundaryEvent).build();
             } else {
                 return createCustomEventBuilder(eventName, visit, boundaryEvent)
-                        .addProperty("dwellTimeInSeconds", visit.getDwellTimeInMillis() * 1000)
+                        .addProperty("dwellTimeInSeconds", visit.getDwellTimeInMillis() / 1000)
                         .build();
             }
         }
@@ -213,13 +213,15 @@ public class GimbalAdapter {
             HashMap<String, String> placeAttributesCopy = new HashMap<>();
             Attributes placeAttributes = visit.getPlace().getAttributes();
 
+            CustomEvent.Builder builder = CustomEvent.newBuilder(eventName);
             if (placeAttributes != null) {
                 for (String key : placeAttributes.getAllKeys()) {
                     placeAttributesCopy.put(key, placeAttributes.getValue(key));
+                    builder.addProperty("GMBL_PA_" + key, placeAttributes.getValue(key));
                 }
             }
 
-            return CustomEvent.newBuilder(eventName)
+            return builder
                     .addProperty("placeAttributes", JsonValue.wrapOpt(placeAttributesCopy))
                     .addProperty("visitID", visit.getVisitID())
                     .addProperty("placeIdentifier", visit.getPlace().getIdentifier())
@@ -234,7 +236,7 @@ public class GimbalAdapter {
      *
      * @param context The application context.
      */
-    GimbalAdapter(@NonNull Context context) {
+    AirshipAdapter(@NonNull Context context) {
         this.context = context.getApplicationContext();
         this.preferences = context.getSharedPreferences(PREFERENCE_NAME, Context.MODE_PRIVATE);
     }
@@ -242,9 +244,9 @@ public class GimbalAdapter {
     /**
      * GimbalAdapter shared instance.
      */
-    public synchronized static GimbalAdapter shared(@NonNull Context context) {
+    public synchronized static AirshipAdapter shared(@NonNull Context context) {
         if (instance == null) {
-            instance = new GimbalAdapter(context.getApplicationContext());
+            instance = new AirshipAdapter(context.getApplicationContext());
         }
 
         return instance;

@@ -1,9 +1,11 @@
-group = 'com.gimbal.android.v4'
-description = "Urban Airship Gimbal Adapter"
-version = rootProject.adapterVersion
+plugins {
+    id("com.android.library")
+    id("maven-publish")
+}
 
-apply plugin: 'com.android.library'
-apply plugin: 'maven-publish'
+group = 'com.gimbal.android.v4'
+description = "Airship Gimbal Adapter"
+version = rootProject.adapterVersion
 
 android {
     compileSdkVersion rootProject.compileSdkVersion
@@ -20,8 +22,8 @@ android {
 }
 
 dependencies {
-    compileOnly "com.gimbal.android.v4:gimbal-sdk:4.7.0"
-    compileOnly "com.gimbal.android.v4:gimbal-slf4j-impl:4.7.0"
+    api "com.gimbal.android.v4:gimbal-sdk:4.7.0"
+    implementation "com.gimbal.android.v4:gimbal-slf4j-impl:4.7.0"
     api "com.urbanairship.android:urbanairship-core:16.5.0"
 }
 

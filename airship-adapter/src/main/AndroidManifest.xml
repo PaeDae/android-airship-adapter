@@ -1,10 +1,10 @@
-<manifest package="com.gimbal.urbanairship"
+<manifest package="com.gimbal.airship"
           xmlns:android="http://schemas.android.com/apk/res/android">
 
     <application>
 
         <receiver
-            android:name="com.gimbal.urbanairship.AirshipReadyReceiver"
+            android:name="com.gimbal.airship.AirshipReadyReceiver"
             android:exported="false">
 
             <intent-filter>
