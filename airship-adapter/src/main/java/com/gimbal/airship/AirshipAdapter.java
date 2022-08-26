@@ -17,7 +17,6 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresPermission;
-import androidx.annotation.RestrictTo;
 import androidx.core.content.ContextCompat;
 
 import com.gimbal.android.Attributes;
@@ -29,24 +28,25 @@ import com.gimbal.android.Visit;
 import com.urbanairship.UAirship;
 import com.urbanairship.analytics.CustomEvent;
 import com.urbanairship.analytics.location.RegionEvent;
+import com.urbanairship.channel.AirshipChannelListener;
 import com.urbanairship.json.JsonValue;
 import com.urbanairship.util.DateUtils;
 import com.urbanairship.util.HelperActivity;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * GimbalAdapter interfaces Gimbal SDK functionality with Urban Airship services.
  */
+@SuppressWarnings({"unused"})
 public class AirshipAdapter {
     private static final String PREFERENCE_NAME = "com.urbanairship.gimbal.preferences";
     private static final String API_KEY_PREFERENCE = "com.urbanairship.gimbal.api_key";
-    private static final String TRACK_CUSTOM_ENTRY_PREFERENCE_KEY = "com.urbanairship.gimbal.track_custom_entry";
-    private static final String TRACK_CUSTOM_EXIT_PREFERENCE_KEY = "com.urbanairship.gimbal.track_custom_exit";
-    private static final String TRACK_REGION_EVENT_PREFERENCE_KEY = "com.urbanairship.gimbal.track_custom_exit";
+    private static final String TRACK_CUSTOM_ENTRY_PREFERENCE_KEY = "com.gimbal.track_custom_entry";
+    private static final String TRACK_CUSTOM_EXIT_PREFERENCE_KEY = "com.gimbal.track_custom_exit";
+    private static final String TRACK_REGION_EVENT_PREFERENCE_KEY = "com.gimbal.track_region_event";
     private static final String STARTED_PREFERENCE = "com.urbanairship.gimbal.is_started";
 
     private static final String TAG = "GimbalAdapter";
@@ -126,33 +126,30 @@ public class AirshipAdapter {
      * Listener for Gimbal place events. Creates an analytics event
      * corresponding to boundary event type, and Event type preference.
      */
-    private PlaceEventListener placeEventListener = new PlaceEventListener() {
+    private final PlaceEventListener placeEventListener = new PlaceEventListener() {
         @Override
         public void onVisitStart(@NonNull final Visit visit) {
             Log.i(TAG, "Entered place: " + visit.getPlace().getName() + "Entrance date: " +
                     DateUtils.createIso8601TimeStamp(visit.getArrivalTimeInMillis()));
 
-            UAirship.shared(new UAirship.OnReadyCallback() {
-                @Override
-                public void onAirshipReady(@NonNull UAirship airship) {
-                    if (preferences.getBoolean(TRACK_REGION_EVENT_PREFERENCE_KEY, false)) {
-                        RegionEvent event = createRegionEvent(visit, RegionEvent.BOUNDARY_EVENT_ENTER);
+            UAirship.shared(airship -> {
+                if (preferences.getBoolean(TRACK_REGION_EVENT_PREFERENCE_KEY, false)) {
+                    RegionEvent event = createRegionEvent(visit, RegionEvent.BOUNDARY_EVENT_ENTER);
 
-                        airship.getAnalytics().addEvent(event);
+                    airship.getAnalytics().addEvent(event);
 
-                        for (Listener listener : listeners) {
-                            listener.onRegionEntered(event, visit);
-                        }
+                    for (Listener listener : listeners) {
+                        listener.onRegionEntered(event, visit);
                     }
+                }
 
-                    if (preferences.getBoolean(TRACK_CUSTOM_ENTRY_PREFERENCE_KEY, false)) {
-                        CustomEvent event = createCustomEvent(CUSTOM_ENTRY_EVENT_NAME, visit, RegionEvent.BOUNDARY_EVENT_ENTER);
+                if (preferences.getBoolean(TRACK_CUSTOM_ENTRY_PREFERENCE_KEY, false)) {
+                    CustomEvent event = createCustomEvent(CUSTOM_ENTRY_EVENT_NAME, visit, RegionEvent.BOUNDARY_EVENT_ENTER);
 
-                        airship.getAnalytics().addEvent(event);
+                    airship.getAnalytics().addEvent(event);
 
-                        for (Listener listener : listeners) {
-                            listener.onCustomRegionEntry(event, visit);
-                        }
+                    for (Listener listener : listeners) {
+                        listener.onCustomRegionEntry(event, visit);
                     }
                 }
             });
@@ -164,28 +161,25 @@ public class AirshipAdapter {
                     DateUtils.createIso8601TimeStamp(visit.getArrivalTimeInMillis()) + "Exit date:" +
                     DateUtils.createIso8601TimeStamp(visit.getDepartureTimeInMillis()));
 
-            UAirship.shared(new UAirship.OnReadyCallback() {
-                @Override
-                public void onAirshipReady(@NonNull UAirship airship) {
+            UAirship.shared(airship -> {
 
-                    if (preferences.getBoolean(TRACK_REGION_EVENT_PREFERENCE_KEY, false)) {
-                        RegionEvent event = createRegionEvent(visit, RegionEvent.BOUNDARY_EVENT_EXIT);
+                if (preferences.getBoolean(TRACK_REGION_EVENT_PREFERENCE_KEY, false)) {
+                    RegionEvent event = createRegionEvent(visit, RegionEvent.BOUNDARY_EVENT_EXIT);
 
-                        airship.getAnalytics().addEvent(event);
+                    airship.getAnalytics().addEvent(event);
 
-                        for (Listener listener : listeners) {
-                            listener.onRegionExited(event, visit);
-                        }
+                    for (Listener listener : listeners) {
+                        listener.onRegionExited(event, visit);
                     }
+                }
 
-                    if (preferences.getBoolean(TRACK_CUSTOM_EXIT_PREFERENCE_KEY, false)) {
-                        CustomEvent event = createCustomEvent(CUSTOM_EXIT_EVENT_NAME, visit, RegionEvent.BOUNDARY_EVENT_EXIT);
+                if (preferences.getBoolean(TRACK_CUSTOM_EXIT_PREFERENCE_KEY, false)) {
+                    CustomEvent event = createCustomEvent(CUSTOM_EXIT_EVENT_NAME, visit, RegionEvent.BOUNDARY_EVENT_EXIT);
 
-                        airship.getAnalytics().addEvent(event);
+                    airship.getAnalytics().addEvent(event);
 
-                        for (Listener listener : listeners) {
-                            listener.onCustomRegionExit(event, visit);
-                        }
+                    for (Listener listener : listeners) {
+                        listener.onCustomRegionExit(event, visit);
                     }
                 }
             });
@@ -341,17 +335,14 @@ public class AirshipAdapter {
      * @param callback     Optional callback to get the result of the permission prompt.
      */
     public void startWithPermissionPrompt(@NonNull final String gimbalApiKey, @Nullable final PermissionResultCallback callback) {
-        requestPermissionsTask = new RequestPermissionsTask(context.getApplicationContext(), new PermissionResultCallback() {
-            @Override
-            public void onResult(boolean enabled) {
-                if (enabled) {
-                    //noinspection MissingPermission
-                    startAdapter(gimbalApiKey);
-                }
+        requestPermissionsTask = new RequestPermissionsTask(context.getApplicationContext(), enabled -> {
+            if (enabled) {
+                //noinspection MissingPermission
+                startAdapter(gimbalApiKey);
+            }
 
-                if (callback != null) {
-                    callback.onResult(enabled);
-                }
+            if (callback != null) {
+                callback.onResult(enabled);
             }
         });
 
@@ -376,6 +367,19 @@ public class AirshipAdapter {
             updateDeviceAttributes();
             Log.i(TAG, String.format("Gimbal Adapter started. Gimbal.isStarted: %b, Gimbal application instance identifier: %s", Gimbal.isStarted(), Gimbal.getApplicationInstanceIdentifier()));
             isAdapterStarted = true;
+            UAirship.shared(airship -> {
+                updateDeviceAttributes();
+                airship.getChannel().addChannelListener(new AirshipChannelListener() {
+                    @Override
+                    public void onChannelCreated(@NonNull String channelId) {
+                        updateDeviceAttributes();
+                    }
+
+                    @Override
+                    public void onChannelUpdated(@NonNull String channelId) {
+                    }
+                });
+            });
         } catch (Exception e) {
             Log.e(TAG,"Failed to start Gimbal.", e);
         }
@@ -429,11 +433,7 @@ public class AirshipAdapter {
      * @return {@code true} if permissions have been granted, otherwise {@code false}.
      */
     public boolean isPermissionGranted() {
-        if (ContextCompat.checkSelfPermission(context, ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            return true;
-        }
-
-        return false;
+        return ContextCompat.checkSelfPermission(context, ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
     }
 
     /**
@@ -470,36 +470,17 @@ public class AirshipAdapter {
      * Updates Gimbal and Urban Airship device attributes.
      */
     private void updateDeviceAttributes() {
-        Map<String, String> deviceAttributes = new HashMap<>();
-
         DeviceAttributesManager deviceAttributesManager = DeviceAttributesManager.getInstance();
 
         if (deviceAttributesManager == null) {
             return;
         }
 
-        if (deviceAttributesManager.getDeviceAttributes() != null
-                && deviceAttributesManager.getDeviceAttributes().size() > 0) {
-            deviceAttributes.putAll(deviceAttributesManager.getDeviceAttributes());
-        }
-
-        String namedUserId = UAirship.shared().getNamedUser().getId();
-        if (namedUserId != null) {
-            deviceAttributes.put(GIMBAL_UA_NAMED_USER_ID, namedUserId);
-        } else {
-            deviceAttributes.remove(GIMBAL_UA_NAMED_USER_ID);
-        }
+        String namedUserId = UAirship.shared().getContact().getNamedUserId();
+        deviceAttributesManager.setDeviceAttribute(GIMBAL_UA_NAMED_USER_ID, namedUserId);
 
         String channelId = UAirship.shared().getChannel().getId();
-        if (channelId != null) {
-            deviceAttributes.put(GIMBAL_UA_CHANNEL_ID, channelId);
-        } else {
-            deviceAttributes.remove(GIMBAL_UA_CHANNEL_ID);
-        }
-
-        if (deviceAttributes.size() > 0) {
-            deviceAttributesManager.setDeviceAttributes(deviceAttributes);
-        }
+        deviceAttributesManager.setDeviceAttribute(GIMBAL_UA_CHANNEL_ID, channelId);
 
         String gimbalInstanceId = Gimbal.getApplicationInstanceIdentifier();
         if (gimbalInstanceId != null) {
@@ -511,7 +492,7 @@ public class AirshipAdapter {
 
         @SuppressLint("StaticFieldLeak")
         private final Context context;
-        private PermissionResultCallback callback;
+        private final PermissionResultCallback callback;
 
 
         RequestPermissionsTask(Context context, PermissionResultCallback callback) {
