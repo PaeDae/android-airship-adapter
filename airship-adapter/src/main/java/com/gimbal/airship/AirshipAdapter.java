@@ -289,7 +289,6 @@ public class AirshipAdapter {
      * Restores the last run state. If previously started it will start listening, otherwise
      * it will stop listening. Should be called when the application starts up.
      */
-    @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
     public void restore() {
         String gimbalApiKey = preferences.getString(API_KEY_PREFERENCE, null);
         boolean previouslyStarted = preferences.getBoolean(STARTED_PREFERENCE, false);
